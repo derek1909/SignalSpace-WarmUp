@@ -4,51 +4,48 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 import numpy as np
 
-class SparseCodingModel(nn.Module):
-    # input_dim = pixels in an image patch = 5*5
-    # code_dim = num of basis functions
-    def __init__(self, input_dim, code_dim):
-        super(SparseCodingModel, self).__init__()
-        self.dictionary = nn.Parameter(torch.randn(input_dim, code_dim))  # Random basis functions, Learnable
-        self.encoder = nn.Linear(input_dim, code_dim, bias=False, device = 'mps')
-        self.decoder = nn.Linear(code_dim, input_dim)  # Reconstruction layer
+def GenerateDataset(a=2, b=0.7, num_noisy_samples=30, noise_sigma=0.2, PLOT=True):
+    # Range of theta values
+    t = np.linspace(0, 3 * np.pi, 360)  # From 0 to 5*pi
 
-    def forward(self, data):
-        sparse_codes = self.encoder(data)
-        reconstruction = self.decoder(sparse_codes)
+    # Single curve
+    theta = t
+    r = a + b * t
 
-        return sparse_codes, reconstruction
-    
-    def loss(data, sparse_codes, reconstruction):
+    # twin curve
+    theta = np.hstack((theta, theta))
+    r = np.hstack((r, -r))
 
-        sigma = 1
-        lambd = 1
-        # data should be flattened before passed into loss 
-        recon_loss = ((data - reconstruction)**2).mean()  # Reconstruction loss
-        sparsity_penalty = ( np.log(np.square(sparse_codes)/(sigma**2)+1) * lambd ).mean()
+    # Generate original curve
+    xy = np.array([r * np.cos(theta), r * np.sin(theta)]).T
 
-        return recon_loss + sparsity_penalty
-    
+    # Initialize arrays to hold the noisy data
+    xy_noisy = np.tile(xy, [num_noisy_samples, 1])  # Repeat theta for each set of noisy points
 
-def Image2Patch(image, patch_size=5, plot=False):
-    # Unfold the image to extract patches
-    patches = image.unfold(1, patch_size, 1).unfold(2, patch_size, 1)
+    # Generate noisy data points
+    noise = np.random.normal(0, noise_sigma, xy_noisy.shape)
+    xy_noisy += noise
 
-    # Reshape to get the patches in the desired shape
-    patches = patches.contiguous().view(-1, 1, patch_size, patch_size)
+    if PLOT:
+        # Plotting in polar coordinates
+        plt.figure(figsize=[8, 8])
 
-    if plot:
-        print('patches.shape = ', patches.shape)  # Should print: torch.Size([576, 1, 5, 5])
+        # Original curve
+        ax = plt.subplot(111)
+        ax.plot(xy[:,0], xy[:,1], label='Original Curve', color='blue')
 
-        col = 28-patch_size+1
-        figure = plt.figure(figsize=(col,col))
-        for i in range(1, col * col + 1):
-            figure.add_subplot(col, col, i)
-            plt.axis("off")
-            plt.imshow(patches[i-1].squeeze(), cmap="gray")
+        # Noisy data points
+        ax = plt.subplot(111)
+        ax.scatter(xy_noisy[:, 0], xy_noisy[:, 1], label='Noisy Data', color='red', alpha=0.1)
 
-        plt.subplots_adjust(wspace=0.02, hspace=0.02)
+        # Setting the title and labels
+        ax.set_title("Original Curve and Noisy Data Points: r(θ) = a + bθ")
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.legend()
+
+        # Show the plot
         plt.show()
 
-    return patches
-   
+    return xy_noisy
+
