@@ -4,9 +4,18 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 import numpy as np
 
+# Check that MPS is available
+if torch.backends.mps.is_available():
+    device = torch.device("mps")
+    print("MPS is enabled!")
+elif torch.cuda.is_available():
+    device = torch.device("cuda")
+    print("cuda is enabled!")
+
+
 def GenerateDataset(a=2, b=0.7, num_noisy_samples=30, noise_sigma=0.2, PLOT=True):
     # Range of theta values
-    t = np.linspace(0, 3 * np.pi, 360)  # From 0 to 5*pi
+    t = np.linspace(0, 4 * np.pi, 400)  # From 0 to 5*pi
 
     # Single curve
     theta = t
@@ -49,3 +58,49 @@ def GenerateDataset(a=2, b=0.7, num_noisy_samples=30, noise_sigma=0.2, PLOT=True
 
     return xy_noisy
 
+
+class SparseCoding():
+    def __init__(self, data_size, activ_dim, basisfunc_num, sparsity_level):
+        super(SparseCoding, self).__init__()
+        self.Basis = torch.randn(basisfunc_num, activ_dim, requires_grad=True, device = device)
+        with torch.no_grad():
+            self.Basis *= 5  # This is not right!!!!!!!!
+        self.Activ = torch.randn(data_size, basisfunc_num, requires_grad=False, device = device) #manually update A
+        self.sparsity_level = sparsity_level
+
+    def loss(self,data):
+        reconstruction = self.Activ @ self.Basis
+
+        # Compute the squared differences
+        squared_error= (reconstruction - data) ** 2
+
+        # Compute the sum of squared differences
+        sum_squared_error = torch.sum(squared_error)
+
+        # Compute the number of samples
+        num_samples = data.shape[0]
+
+        return sum_squared_error/num_samples
+    
+    def activ_panalty(self):
+        return self.sparsity_level * torch.norm(abs(self.Activ), p=0.5) 
+
+    def plot_basis(self):
+        # Plotting in polar coordinates
+        plt.figure(figsize=[6, 6])
+
+        # Detach the tensor before converting to numpy
+        basis_np = self.Basis.detach().cpu().numpy()
+
+        # plot dictionary elements
+        ax = plt.subplot(111)
+        ax.scatter(basis_np[:, 0], basis_np[:, 1], label='landmarks', color='blue')
+
+        # Setting the title and labels
+        ax.set_title("Landmarks learnt by Sparse coding")
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.legend()
+
+        # Show the plot
+        plt.show()
