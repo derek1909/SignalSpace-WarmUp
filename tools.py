@@ -20,7 +20,7 @@ def GenerateDataset(a=2, b=0.7, num_noisy_samples=30, noise_sigma=0.2, PLOT=True
     xy = np.array([r * np.cos(theta), r * np.sin(theta)]).T
 
     # Initialize arrays to hold the noisy data
-    xy_noisy = np.tile(xy, [num_noisy_samples, 1])  # Repeat theta for each set of noisy points
+    xy_noisy = np.tile(xy, [num_noisy_samples, 1]) 
 
     # Generate noisy data points
     noise = np.random.normal(0, noise_sigma, xy_noisy.shape)
