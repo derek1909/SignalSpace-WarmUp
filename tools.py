@@ -104,3 +104,19 @@ class SparseCoding():
 
         # Show the plot
         plt.show()
+
+    def KNN(self, k):
+    # input = basis: (N,2)
+    # output = (N,N) (k-elements in second dimension =1 )
+
+        # Compute pairwise distances between all elements in model.Basis
+        distances = torch.cdist(self.Basis, self.Basis, p=2) # (N,N)
+
+        # Exclude the element itself by setting its distance to infinity
+        distances.fill_diagonal_(float('inf'))
+
+        # Find the indices of the K-nearest neighbors for each element
+        _, indices = torch.topk(distances, k, largest=False) # (N,k)
+
+        return indices
+
