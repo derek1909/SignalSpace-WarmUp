@@ -62,9 +62,10 @@ def GenerateDataset(a=2, b=0.7, num_noisy_samples=30, noise_sigma=0.2, PLOT=True
 class SparseCoding():
     def __init__(self, data_size, activ_dim, basisfunc_num, sparsity_level):
         super(SparseCoding, self).__init__()
-        self.Basis = torch.randn(basisfunc_num, activ_dim, requires_grad=True, device = device)
+        self.Basis = torch.rand(basisfunc_num, activ_dim, requires_grad=True, device = device)
         with torch.no_grad():
-            self.Basis *= 5  # This is not right!!!!!!!!
+            self.Basis -= 0.5  # This is not right!!!!!!!!
+            self.Basis *= 20  # This is not right!!!!!!!!
         self.Activ = torch.randn(data_size, basisfunc_num, requires_grad=False, device = device) #manually update A
         self.sparsity_level = sparsity_level
 
