@@ -105,6 +105,7 @@ class SparseCoding():
         # Show the plot
         plt.show()
 
+    @torch.no_grad()
     def KNN(self, k):
     # input = basis: (N,2)
     # output = (N,N) (k-elements in second dimension =1 )
