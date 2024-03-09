@@ -107,12 +107,15 @@ class SparseCoding():
         plt.show()
 
     @torch.no_grad()
-    def KNN(self, k):
-    # input = basis: (N,2)
+    def KNN_Data(self, data, k, PLOT=True):
+    # input = k - number of neighbors to find
     # output = (N,N) (k-elements in second dimension =1 )
+        
+        ## move data back to cpu, because some unknown error for topk ##
+        data = data.cpu()
 
         # Compute pairwise distances between all elements in model.Basis
-        distances = torch.cdist(self.Basis, self.Basis, p=2) # (N,N)
+        distances = torch.cdist(data, data, p=2) # (N,N)
 
         # Exclude the element itself by setting its distance to infinity
         distances.fill_diagonal_(float('inf'))
@@ -120,5 +123,57 @@ class SparseCoding():
         # Find the indices of the K-nearest neighbors for each element
         _, indices = torch.topk(distances, k, largest=False) # (N,k)
 
+
+        if PLOT==True:
+            ## plot neighbors for randomly selected data point
+            idx = torch.randint(low=0,high=data.shape[0],size=(1,)).item()
+            print('idx: ', idx, '/', data.shape[0])
+
+            print('neighbor idx: ', indices[idx])
+
+            print('dist: ', distances[idx,indices[idx]])
+
+            fig, [ax, ax1] = plt.subplots(figsize=[13,6],nrows=1, ncols=2)
+
+            # plot dictionary elements
+            ax.scatter(data[:, 0], data[:, 1], label='All landmarks', color='gray', alpha=0.3)
+            ax.scatter(data[idx,0], data[idx,1], label='the data point', color='blue', alpha=1)
+            neighbors = data[indices[idx],:]
+            print(neighbors)
+            ax.scatter(neighbors[:,0], neighbors[:,1], label='neighbors', color='red', alpha=1)
+
+            # Setting the title and labels
+            ax.set_title("Visualise K-nearest neighbors for datapoints")
+            ax.set_xlabel("x")
+            ax.set_ylabel("y")
+            ax.legend()
+
+            # Zoom in version
+            ax1.scatter(data[idx,0], data[idx,1], label='the data point', color='blue', alpha=1)
+            neighbors = data[indices[idx],:]
+            ax1.scatter(neighbors[:,0], neighbors[:,1], label='neighbors', color='red', alpha=1)
+
+            # Setting the title and labels
+            ax1.set_title("Visualise K-nearest neighbors (zoomed in)")
+            ax1.set_xlabel("x")
+            ax1.set_ylabel("y")
+            ax1.legend()
+            plt.show()
+
         return indices
 
+    @torch.no_grad()
+    def KNN_B(self, k):
+    # input = k - number of neighbors to find
+    # output = (#basis,#basis) (k-elements in second dimension =1 )
+
+        # Compute pairwise distances between all elements in model.Basis
+        distances = torch.cdist(self.Basis, self.Basis, p=2) # (#basis,#basis) 
+
+        # Exclude the element itself by setting its distance to infinity
+        distances.fill_diagonal_(float('inf'))
+
+        # Find the indices of the K-nearest neighbors for each element
+        _, indices = torch.topk(distances, k, largest=False) #  (#basis,k)
+
+        return indices
